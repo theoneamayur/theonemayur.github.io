@@ -72,14 +72,7 @@ document.addEventListener('mousemove', (e) => {
 
 // Pen Tool Drawing Effect
 function drawPenTool() {
-    if (!ctx || !gradientCanvas || isMobile()) {
-        requestAnimationFrame(drawPenTool);
-        return;
-    }
-    
-    // Skip drawing when modal is open
-    if (modal.classList.contains('active')) {
-        ctx.clearRect(0, 0, gradientCanvas.width, gradientCanvas.height);
+    if (!ctx || !gradientCanvas) {
         requestAnimationFrame(drawPenTool);
         return;
     }
@@ -253,35 +246,38 @@ document.addEventListener('mousedown', (e) => {
     penTool.dragStart = { x: mouseX, y: mouseY, pointIndex: penTool.currentPath.points.length - 1 };
 });
 
-document.addEventListener('mousemove', (e) => {
-    // mouseX and mouseY are updated by the gradient trail mousemove listener
-    
-    // If dragging, create handles
-    if (penTool.dragStart && penTool.isDrawing) {
-        const dx = mouseX - penTool.dragStart.x;
-        const dy = mouseY - penTool.dragStart.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
+// Initialize pen tool event listeners after DOM loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('mousemove', (e) => {
+        // mouseX and mouseY are updated by the gradient trail mousemove listener
         
-        if (dist > 10) { // Only create handles if dragged enough
-            const point = penTool.currentPath.points[penTool.dragStart.pointIndex];
-            const handleX = penTool.dragStart.x + dx;
-            const handleY = penTool.dragStart.y + dy;
+        // If dragging, create handles
+        if (penTool.dragStart && penTool.isDrawing) {
+            const dx = mouseX - penTool.dragStart.x;
+            const dy = mouseY - penTool.dragStart.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
             
-            // Create symmetric handles
-            point.handleOut = { x: handleX, y: handleY };
-            point.handleIn = { x: penTool.dragStart.x - dx, y: penTool.dragStart.y - dy };
+            if (dist > 10) { // Only create handles if dragged enough
+                const point = penTool.currentPath.points[penTool.dragStart.pointIndex];
+                const handleX = penTool.dragStart.x + dx;
+                const handleY = penTool.dragStart.y + dy;
+                
+                // Create symmetric handles
+                point.handleOut = { x: handleX, y: handleY };
+                point.handleIn = { x: penTool.dragStart.x - dx, y: penTool.dragStart.y - dy };
+            }
         }
-    }
-});
-
-document.addEventListener('mouseup', (e) => {
-    penTool.dragStart = null;
-});
-
+    });
+    
+    document.addEventListener('mouseup', (e) => {
+        penTool.dragStart = null;
+    });
+    
 // Initialize pen tool
 if (!isMobile()) {
     drawPenTool();
 }
+});
 
 // Clear pen tool paths with Escape key
 document.addEventListener('keydown', (e) => {
@@ -543,20 +539,46 @@ function openModal(id) {
 
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+    
+    // Update URL hash to preserve state on refresh
+    history.pushState('', document.title, `${window.location.pathname}${window.location.search}#project-${id}`);
 }
 
 function closeModal() {
     modal.classList.remove('active');
     document.body.style.overflow = '';
+    // Update URL to remove hash when closing modal
+    history.pushState('', document.title, window.location.pathname + window.location.search);
 }
 
 function nextProject() {
     currentProject = currentProject < 4 ? currentProject + 1 : 1;
     openModal(currentProject);
+    
+    // Update URL hash
+    history.pushState('', document.title, `${window.location.pathname}${window.location.search}#project-${currentProject}`);
+    
+    // Scroll to top of modal content
+    const modalContent = document.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.scrollTop = 0;
+    }
 }
 
 document.querySelectorAll('.project-visual').forEach(visual => {
-    visual.addEventListener('click', () => openModal(parseInt(visual.dataset.project)));
+    visual.addEventListener('click', () => {
+        const projectId = parseInt(visual.dataset.project);
+        openModal(projectId);
+        
+        // Update URL hash
+        history.pushState('', document.title, `${window.location.pathname}${window.location.search}#project-${projectId}`);
+        
+        // Scroll to top of modal content
+        const modalContent = document.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.scrollTop = 0;
+        }
+    });
 });
 
 
@@ -587,7 +609,30 @@ function animateCounters() {
 
 // Initialize
 if (!isMobile()) {
-    animatePanel(0);
+    // Check for hash in URL to open specific project FIRST
+    const hash = window.location.hash.substring(1); // Get hash without #
+    if (hash && hash.startsWith('project-')) {
+        const projectId = parseInt(hash.substring(8)); // Extract number after 'project-'
+        if (!isNaN(projectId) && projectId >= 1 && projectId <= 4) {
+            // Open modal with the specified project immediately
+            openModal(projectId);
+        } else {
+            animatePanel(0); // Default to home panel
+        }
+    } else if (hash) {
+        // Handle section navigation (home, work, services, about, contact)
+        const sectionMap = {
+            'home': 0, 'work': 2, 'services': 6, 'about': 8, 'contact': 10
+        };
+        const targetPanel = sectionMap[hash];
+        if (targetPanel !== undefined) {
+            animatePanel(targetPanel);
+        } else {
+            animatePanel(0); // Default to home panel
+        }
+    } else {
+        animatePanel(0); // Default to home panel
+    }
 }
 setTimeout(animateCounters, 2000);
 

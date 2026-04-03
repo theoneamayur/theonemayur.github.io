@@ -63,7 +63,7 @@ a { color: inherit; text-decoration: none; }
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 99;
+    z-index: 100;
 }
 
 /* Header - Right Aligned */
@@ -73,7 +73,7 @@ a { color: inherit; text-decoration: none; }
     width: 100%;
     display: flex;
     align-items: center;
-    padding: 60px 80px 24px;
+    padding: 40px 250px 24px;
     z-index: 100;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
@@ -671,7 +671,8 @@ a { color: inherit; text-decoration: none; }
     top: 0; left: 0;
     width: 100%; height: 100%;
     overflow-y: auto;
-    background: var(--black);
+    background: transparent;
+    touch-action: pan-y;
 }
 
 
@@ -891,8 +892,6 @@ a { color: inherit; text-decoration: none; }
     .mobile-menu-links { gap: 24px; }
     .mobile-menu-links a { font-size: 28px; }
     .mobile-cta { margin-top: 16px; }
-    
-    .gradient-canvas { display: none; }
     
     .hero { gap: 24px; }
     .hero-overline { font-size: 10px; letter-spacing: 2px; margin-bottom: 16px; }
